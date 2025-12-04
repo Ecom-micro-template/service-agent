@@ -60,8 +60,8 @@ func CreateCommission(c *gin.Context) {
 	c.JSON(http.StatusCreated, commission)
 }
 
-// GetAgentCommissions retrieves all commissions for an agent
-func GetAgentCommissions(c *gin.Context) {
+// GetAgentCommissionsByID retrieves all commissions for an agent by ID (admin function)
+func GetAgentCommissionsByID(c *gin.Context) {
 	agentID := c.Param("id")
 	status := c.Query("status")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))

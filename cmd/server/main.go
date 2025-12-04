@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	libmiddleware "github.com/niaga-platform/lib-common/middleware"
 	"github.com/niaga-platform/service-agent/internal/config"
 	"github.com/niaga-platform/service-agent/internal/database"
 	"github.com/niaga-platform/service-agent/internal/handlers"
@@ -55,7 +56,25 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	router := gin.Default()
+	router := gin.New()
+
+	// Apply global middleware
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
+
+	// CORS - use environment-based configuration
+	allowedOrigins := getEnv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003")
+	router.Use(libmiddleware.CORSWithOrigins(allowedOrigins))
+
+	// Security headers
+	router.Use(libmiddleware.SecurityHeaders())
+
+	// Input validation
+	router.Use(libmiddleware.InputValidation())
+
+	// Rate limiting (50 requests per minute)
+	rateLimiter := libmiddleware.NewRateLimiter(50, 100)
+	rateLimiter.CleanupLimiters()
 
 	// Health check endpoints
 	router.GET("/health", func(c *gin.Context) {
@@ -97,4 +116,12 @@ func main() {
 	if err := router.Run(addr); err != nil {
 		log.Fatal().Err(err).Msg("Failed to start server")
 	}
+}
+
+// getEnv gets an environment variable or returns a default value
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

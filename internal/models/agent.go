@@ -48,17 +48,17 @@ func (Agent) TableName() string {
 
 // Dashboard represents agent dashboard statistics
 type Dashboard struct {
-	TotalOrders         int               `json:"total_orders"`
-	TotalSales          float64           `json:"total_sales"`
-	TotalCommission     float64           `json:"total_commission"`
-	PendingCommission   float64           `json:"pending_commission"`
-	ApprovedCommission  float64           `json:"approved_commission"`
-	PaidCommission      float64           `json:"paid_commission"`
-	TotalCustomers      int               `json:"total_customers"`
-	MonthlyOrders       int               `json:"monthly_orders"`
-	MonthlySales        float64           `json:"monthly_sales"`
-	MonthlyCommission   float64           `json:"monthly_commission"`
-	AverageOrderValue   float64           `json:"average_order_value"`
+	TotalOrders         int64               `json:"total_orders"`
+	TotalSales          float64             `json:"total_sales"`
+	TotalCommission     float64             `json:"total_commission"`
+	PendingCommission   float64             `json:"pending_commission"`
+	ApprovedCommission  float64             `json:"approved_commission"`
+	PaidCommission      float64             `json:"paid_commission"`
+	TotalCustomers      int64               `json:"total_customers"`
+	MonthlyOrders       int64               `json:"monthly_orders"`
+	MonthlySales        float64             `json:"monthly_sales"`
+	MonthlyCommission   float64             `json:"monthly_commission"`
+	AverageOrderValue   float64             `json:"average_order_value"`
 	CommissionBreakdown CommissionBreakdown `json:"commission_breakdown"`
 }
 
@@ -138,7 +138,7 @@ func (Team) TableName() string {
 type Performance struct {
 	Month              time.Time `json:"month"`
 	TotalSales         float64   `json:"total_sales"`
-	TotalOrders        int       `json:"total_orders"`
+	TotalOrders        int64     `json:"total_orders"`
 	TotalCommission    float64   `json:"total_commission"`
 	CommissionPending  float64   `json:"commission_pending"`
 	CommissionApproved float64   `json:"commission_approved"`

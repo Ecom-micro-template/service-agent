@@ -1,31 +1,33 @@
 # =============================================================================
-# Go Service Dockerfile
-# =============================================================================
-# Build: docker build -t niaga/service-auth .
-# Run:   docker run -p 8001:8001 niaga/service-auth
+# Go Service Dockerfile with Local lib-common Support
 # =============================================================================
 
 # -----------------------------------------------------------------------------
 # Stage 1: Build
 # -----------------------------------------------------------------------------
-FROM golang:1.22-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata
 
 # Set working directory
-WORKDIR /app
+WORKDIR /build
 
-# Copy go mod files
-COPY go.mod go.sum* ./
+# Copy lib-common module
+COPY lib-common ./lib-common
 
-# Download dependencies
+# Copy service files
+COPY service-agent ./service-agent
+
+# Build lib-common dependencies first
+WORKDIR /build/lib-common
+ENV GOTOOLCHAIN=auto
 RUN go mod download
 
-# Copy source code
-COPY . .
-
-# Build the application
+# Now build service-agent
+WORKDIR /build/service-agent
+ENV GOTOOLCHAIN=auto
+RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/server ./cmd/server
 
 # -----------------------------------------------------------------------------
@@ -56,11 +58,11 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 # Expose port
-EXPOSE 8001
+EXPOSE 8007
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget -qO- http://localhost:8001/health || exit 1
+    CMD wget -qO- http://localhost:8007/health || exit 1
 
 # Run the application
 CMD ["./server"]
