@@ -24,9 +24,10 @@ func InitDatabase(cfg *config.Config) error {
 		gormLogger = logger.Default.LogMode(logger.Info)
 	}
 
-	// Connect to database
+	// Connect to database with FK disabled for migration
 	DB, err = gorm.Open(postgres.Open(cfg.GetDatabaseURL()), &gorm.Config{
-		Logger: gormLogger,
+		Logger:                                   gormLogger,
+		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
@@ -38,14 +39,24 @@ func InitDatabase(cfg *config.Config) error {
 		Str("database", cfg.DatabaseName).
 		Msg("Connected to database")
 
-	// Auto migrate models
+	// Disable FK constraints for migration (circular reference: Agent ↔ Team)
+	DB.Exec("SET session_replication_role = replica")
+
+	// Auto migrate models - migrate all at once since FK constraints are disabled
 	if err := DB.AutoMigrate(
 		&models.Agent{},
+		&models.Team{},
 		&models.Commission{},
 		&models.Payout{},
+		&models.Customer{},
+		&models.Order{},
 	); err != nil {
+		DB.Exec("SET session_replication_role = DEFAULT")
 		return fmt.Errorf("failed to auto migrate: %w", err)
 	}
+
+	// Re-enable FK constraints
+	DB.Exec("SET session_replication_role = DEFAULT")
 
 	log.Info().Msg("Database migrations completed")
 
