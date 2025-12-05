@@ -57,10 +57,9 @@ func RegisterAdminAgentRoutes(r *gin.Engine) {
 	commissionAPI := r.Group("/api/v1/admin/commissions")
 	// commissionAPI.Use(middleware.RequireAdmin())
 	{
-		commissionAPI.GET("", handlers.GetAllCommissions)
-		commissionAPI.GET("/:id", handlers.GetCommissionByID)
+		commissionAPI.GET("", handlers.GetPendingCommissions)
+		commissionAPI.GET("/:id/agent/:agent_id", handlers.GetAgentCommissionsByID)
 		commissionAPI.PUT("/:id/approve", handlers.ApproveCommission)
-		commissionAPI.PUT("/:id/reject", handlers.RejectCommission)
 	}
 
 	// Payout management
@@ -68,8 +67,7 @@ func RegisterAdminAgentRoutes(r *gin.Engine) {
 	// payoutAPI.Use(middleware.RequireAdmin())
 	{
 		payoutAPI.POST("", handlers.CreatePayout)
-		payoutAPI.GET("", handlers.GetAllPayouts)
-		payoutAPI.GET("/:id", handlers.GetPayoutByID)
-		payoutAPI.PUT("/:id/complete", handlers.CompletePayout)
+		payoutAPI.GET("/:id", handlers.GetPayout)
+		payoutAPI.PUT("/:id/mark-paid", handlers.MarkPayoutPaid)
 	}
 }
