@@ -88,7 +88,7 @@ func main() {
 	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
-		// Agent routes
+		// Admin Agent routes (CRUD)
 		v1.POST("/agents", handlers.CreateAgent)
 		v1.GET("/agents", handlers.GetAgents)
 		v1.GET("/agents/:id", handlers.GetAgent)
@@ -107,6 +107,23 @@ func main() {
 		v1.GET("/agents/:id/payouts", handlers.GetAgentPayouts)
 		v1.GET("/payouts/:id", handlers.GetPayout)
 		v1.PUT("/payouts/:id/mark-paid", handlers.MarkPayoutPaid)
+
+		// Agent Portal routes (for frontend)
+		agent := v1.Group("/agent")
+		{
+			agent.GET("/profile", handlers.GetAgentProfile)
+			agent.GET("/dashboard", handlers.GetAgentDashboard)
+			agent.GET("/orders", handlers.GetAgentOrders)
+			agent.POST("/orders", handlers.CreateAgentOrder)
+			agent.GET("/orders/:id", handlers.GetAgentOrder)
+			agent.GET("/customers", handlers.GetAgentCustomers)
+			agent.POST("/customers", handlers.CreateAgentCustomer)
+			agent.GET("/customers/:id", handlers.GetAgentCustomer)
+			agent.PUT("/customers/:id", handlers.UpdateAgentCustomer)
+			agent.GET("/commissions", handlers.GetAgentCommissions)
+			agent.GET("/performance", handlers.GetAgentPerformance)
+			agent.GET("/team", handlers.GetAgentTeam)
+		}
 	}
 
 	// Start server
