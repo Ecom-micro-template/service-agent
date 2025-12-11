@@ -34,16 +34,16 @@ func Load() (*Config, error) {
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		DatabaseHost:          getEnv("DATABASE_HOST", "localhost"),
-		DatabasePort:          getEnvAsInt("DATABASE_PORT", 5432),
-		DatabaseUser:          getEnv("DATABASE_USER", "postgres"),
-		DatabasePassword:      getEnv("DATABASE_PASSWORD", "postgres"),
-		DatabaseName:          getEnv("DATABASE_NAME", "niaga_agent"),
-		DatabaseSSLMode:       getEnv("DATABASE_SSLMODE", "disable"),
-		ServerPort:            getEnvAsInt("SERVER_PORT", 8085),
+		DatabaseHost:          getEnv("DB_HOST", "localhost"),
+		DatabasePort:          getEnvAsInt("DB_PORT", 5432),
+		DatabaseUser:          getEnv("DB_USER", "postgres"),
+		DatabasePassword:      getEnv("DB_PASSWORD", "postgres"),
+		DatabaseName:          getEnv("DB_NAME", "agent_db"),
+		DatabaseSSLMode:       getEnv("DB_SSLMODE", "disable"),
+		ServerPort:            getEnvAsInt("APP_PORT", 8006),
 		GinMode:               getEnv("GIN_MODE", "debug"),
 		LogLevel:              getEnv("LOG_LEVEL", "info"),
-		Environment:           getEnv("ENVIRONMENT", "development"),
+		Environment:           getEnv("APP_ENV", "development"),
 		DefaultCommissionRate: getEnvAsFloat("DEFAULT_COMMISSION_RATE", 10.0),
 	}
 
