@@ -131,10 +131,30 @@ func main() {
 			agent.GET("/team", handlers.GetAgentTeam)
 		}
 
-		// Admin routes (require admin middleware) - removed duplicate handlers
-		// admin := v1.Group("/admin")
-		// admin.Use(libmiddleware.RequireAdmin())
-		// Routes commented out due to duplicate handler removal
+		// Admin routes (require admin middleware)
+		admin := v1.Group("/admin")
+		admin.Use(libmiddleware.RequireAdmin())
+		{
+			// Agent management
+			admin.GET("/agents", handlers.GetAgents)
+			admin.POST("/agents", handlers.CreateAgent)
+			admin.GET("/agents/:id", handlers.GetAgent)
+			admin.PUT("/agents/:id", handlers.UpdateAgent)
+			admin.DELETE("/agents/:id", handlers.DeleteAgent)
+			admin.GET("/agents/:id/stats", handlers.GetAgentStats)
+			admin.GET("/agents/:id/commissions", handlers.GetAgentCommissions)
+			admin.GET("/agents/:id/payouts", handlers.GetAgentPayouts)
+
+			// Commission management
+			admin.GET("/commissions", handlers.GetPendingCommissions)
+			admin.POST("/commissions", handlers.CreateCommission)
+			admin.PUT("/commissions/:id/approve", handlers.ApproveCommission)
+
+			// Payout management
+			admin.POST("/payouts", handlers.CreatePayout)
+			admin.GET("/payouts/:id", handlers.GetPayout)
+			admin.PUT("/payouts/:id/mark-paid", handlers.MarkPayoutPaid)
+		}
 	}
 
 	// Start server
