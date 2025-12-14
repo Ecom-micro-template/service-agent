@@ -51,6 +51,12 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to initialize database")
 	}
 
+	// Get database instance for handlers
+	_ = database.GetDB() // db not used after removing admin handlers
+
+	// Initialize admin handler - removed duplicate
+	// adminAgentHandler := handlers.NewAdminAgentHandler(db)
+
 	// Setup Gin
 	if cfg.GinMode == "release" {
 		gin.SetMode(gin.ReleaseMode)
@@ -124,6 +130,11 @@ func main() {
 			agent.GET("/performance", handlers.GetAgentPerformance)
 			agent.GET("/team", handlers.GetAgentTeam)
 		}
+
+		// Admin routes (require admin middleware) - removed duplicate handlers
+		// admin := v1.Group("/admin")
+		// admin.Use(libmiddleware.RequireAdmin())
+		// Routes commented out due to duplicate handler removal
 	}
 
 	// Start server
