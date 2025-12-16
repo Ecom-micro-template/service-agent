@@ -44,6 +44,50 @@ func GetAgentProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, agent)
 }
 
+// UpdateAgentProfileRequest represents the request body for updating agent profile
+type UpdateAgentProfileRequest struct {
+	Name  string `json:"name"`
+	Phone string `json:"phone"`
+}
+
+// UpdateAgentProfile updates the authenticated agent's profile
+func UpdateAgentProfile(c *gin.Context) {
+	agentID, err := GetAgentFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var req UpdateAgentProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var agent models.Agent
+	if err := database.GetDB().First(&agent, agentID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
+		return
+	}
+
+	// Update fields if provided
+	if req.Name != "" {
+		agent.Name = req.Name
+	}
+	if req.Phone != "" {
+		agent.Phone = req.Phone
+	}
+
+	if err := database.GetDB().Save(&agent).Error; err != nil {
+		log.Error().Err(err).Msg("Failed to update agent profile")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
+		return
+	}
+
+	log.Info().Uint("agent_id", agentID).Msg("Agent profile updated")
+	c.JSON(http.StatusOK, agent)
+}
+
 // GetAgentDashboard retrieves dashboard statistics for the agent
 func GetAgentDashboard(c *gin.Context) {
 	agentID, err := GetAgentFromContext(c)

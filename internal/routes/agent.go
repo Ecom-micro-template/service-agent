@@ -14,6 +14,7 @@ func RegisterAgentRoutes(r *gin.Engine) {
 	{
 		// Profile
 		agentAPI.GET("/profile", handlers.GetAgentProfile)
+		agentAPI.PUT("/profile", handlers.UpdateAgentProfile)
 
 		// Dashboard
 		agentAPI.GET("/dashboard", handlers.GetAgentDashboard)

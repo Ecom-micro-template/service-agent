@@ -33,6 +33,15 @@ func Load() (*Config, error) {
 	// Load .env file if it exists
 	_ = godotenv.Load()
 
+	// Determine environment - default to production for safety
+	environment := getEnv("APP_ENV", "production")
+
+	// Set GIN mode based on environment (release by default for security)
+	ginMode := getEnv("GIN_MODE", "release")
+	if environment == "development" || environment == "dev" {
+		ginMode = getEnv("GIN_MODE", "debug")
+	}
+
 	cfg := &Config{
 		DatabaseHost:          getEnv("DB_HOST", "localhost"),
 		DatabasePort:          getEnvAsInt("DB_PORT", 5432),
@@ -41,9 +50,9 @@ func Load() (*Config, error) {
 		DatabaseName:          getEnv("DB_NAME", "agent_db"),
 		DatabaseSSLMode:       getEnv("DB_SSLMODE", "disable"),
 		ServerPort:            getEnvAsInt("APP_PORT", 8006),
-		GinMode:               getEnv("GIN_MODE", "debug"),
+		GinMode:               ginMode,
 		LogLevel:              getEnv("LOG_LEVEL", "info"),
-		Environment:           getEnv("APP_ENV", "development"),
+		Environment:           environment,
 		DefaultCommissionRate: getEnvAsFloat("DEFAULT_COMMISSION_RATE", 10.0),
 	}
 
