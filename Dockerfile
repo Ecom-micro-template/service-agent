@@ -27,7 +27,7 @@ RUN go mod download
 # Now build service-agent
 WORKDIR /build/service-agent
 ENV GOTOOLCHAIN=auto
-RUN go mod download
+RUN go mod download && go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/server ./cmd/server
 
 # -----------------------------------------------------------------------------
