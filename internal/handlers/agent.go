@@ -215,3 +215,73 @@ func DeleteAgent(c *gin.Context) {
 	log.Info().Uint("agent_id", agent.ID).Msg("Agent deleted")
 	c.JSON(http.StatusOK, gin.H{"message": "Agent deleted successfully"})
 }
+
+// ResetAgentPasswordRequest is the request to reset agent password
+type ResetAgentPasswordRequest struct {
+	Password string `json:"password" binding:"required,min=8"`
+}
+
+// AuthResetPasswordRequest is the request to reset password in auth service
+type AuthResetPasswordRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// ResetAgentPassword resets an agent's password
+func ResetAgentPassword(c *gin.Context) {
+	id := c.Param("id")
+
+	// First get the agent to find their email
+	var agent models.Agent
+	if err := database.GetDB().First(&agent, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
+		return
+	}
+
+	var req ResetAgentPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Call auth service to reset password
+	authURL := os.Getenv("AUTH_SERVICE_URL")
+	if authURL == "" {
+		authURL = "http://kilang-auth:8001"
+	}
+
+	// Use admin password reset endpoint
+	authReq := AuthResetPasswordRequest{
+		Email:    agent.Email,
+		Password: req.Password,
+	}
+
+	authBody, _ := json.Marshal(authReq)
+	httpReq, _ := http.NewRequest("PUT", authURL+"/api/v1/admin/users/reset-password-by-email", bytes.NewBuffer(authBody))
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	authResp, err := client.Do(httpReq)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to connect to auth service for password reset")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset password"})
+		return
+	}
+	defer authResp.Body.Close()
+
+	if authResp.StatusCode != http.StatusOK {
+		var authError map[string]interface{}
+		json.NewDecoder(authResp.Body).Decode(&authError)
+		log.Error().Interface("auth_error", authError).Int("status", authResp.StatusCode).Msg("Auth service password reset failed")
+
+		errorMsg := "Failed to reset password"
+		if msg, ok := authError["error"].(string); ok {
+			errorMsg = msg
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": errorMsg})
+		return
+	}
+
+	log.Info().Uint("agent_id", agent.ID).Str("email", agent.Email).Msg("Agent password reset successfully")
+	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
+}

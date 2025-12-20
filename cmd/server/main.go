@@ -106,6 +106,9 @@ func main() {
 		v1.GET("/agents/:id/category-commissions", handlers.GetAgentCategoryCommissions)
 		v1.PUT("/agents/:id/category-commissions", handlers.UpdateAgentCategoryCommissions)
 
+		// Password reset route
+		v1.PUT("/agents/:id/reset-password", handlers.ResetAgentPassword)
+
 		// Commission routes
 		v1.POST("/commissions", handlers.CreateCommission)
 		v1.GET("/agents/:id/commissions", handlers.GetAgentCommissions)
