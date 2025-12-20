@@ -41,9 +41,9 @@ func InitDatabase(cfg *config.Config) error {
 	}
 
 	// Connection pool settings optimized for VPS (4GB RAM)
-	sqlDB.SetMaxIdleConns(10)              // Keep 10 idle connections ready
-	sqlDB.SetMaxOpenConns(50)              // Max 50 concurrent connections
-	sqlDB.SetConnMaxLifetime(time.Hour)    // Recycle connections after 1 hour
+	sqlDB.SetMaxIdleConns(10)                  // Keep 10 idle connections ready
+	sqlDB.SetMaxOpenConns(50)                  // Max 50 concurrent connections
+	sqlDB.SetConnMaxLifetime(time.Hour)        // Recycle connections after 1 hour
 	sqlDB.SetConnMaxIdleTime(10 * time.Minute) // Close idle connections after 10 minutes
 
 	log.Info().
@@ -65,6 +65,7 @@ func InitDatabase(cfg *config.Config) error {
 		&models.Payout{},
 		&models.Customer{},
 		&models.Order{},
+		&models.AgentCategoryCommission{},
 	); err != nil {
 		DB.Exec("SET session_replication_role = DEFAULT")
 		return fmt.Errorf("failed to auto migrate: %w", err)
