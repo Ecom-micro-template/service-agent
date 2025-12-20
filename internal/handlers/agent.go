@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +16,7 @@ import (
 type CreateAgentRequest struct {
 	Name           string  `json:"name" binding:"required"`
 	Email          string  `json:"email" binding:"required,email"`
+	Password       string  `json:"password" binding:"required,min=8"`
 	Phone          string  `json:"phone"`
 	CommissionRate float64 `json:"commission_rate"`
 }
@@ -25,7 +29,16 @@ type UpdateAgentRequest struct {
 	Status         string  `json:"status"`
 }
 
-// CreateAgent creates a new agent
+// AuthRegisterRequest is the request to register user with auth service
+type AuthRegisterRequest struct {
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Role      string `json:"role"`
+}
+
+// CreateAgent creates a new agent and registers them with auth service
 func CreateAgent(c *gin.Context) {
 	var req CreateAgentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -33,6 +46,49 @@ func CreateAgent(c *gin.Context) {
 		return
 	}
 
+	// First, register the agent as a user in auth service
+	authURL := os.Getenv("AUTH_SERVICE_URL")
+	if authURL == "" {
+		authURL = "http://kilang-auth:8001"
+	}
+
+	// Split name into first/last name
+	firstName := req.Name
+	lastName := ""
+
+	// Register with auth service
+	authReq := AuthRegisterRequest{
+		Email:     req.Email,
+		Password:  req.Password,
+		FirstName: firstName,
+		LastName:  lastName,
+		Role:      "agent", // Role for agents
+	}
+
+	authBody, _ := json.Marshal(authReq)
+	authResp, err := http.Post(authURL+"/api/v1/auth/register", "application/json", bytes.NewBuffer(authBody))
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to connect to auth service")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register agent credentials"})
+		return
+	}
+	defer authResp.Body.Close()
+
+	if authResp.StatusCode != http.StatusCreated && authResp.StatusCode != http.StatusOK {
+		// Try to get error message from auth service
+		var authError map[string]interface{}
+		json.NewDecoder(authResp.Body).Decode(&authError)
+		log.Error().Interface("auth_error", authError).Int("status", authResp.StatusCode).Msg("Auth service registration failed")
+
+		errorMsg := "Failed to register agent credentials"
+		if msg, ok := authError["error"].(string); ok {
+			errorMsg = msg
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": errorMsg})
+		return
+	}
+
+	// Now create the agent record
 	agent := models.Agent{
 		Name:           req.Name,
 		Email:          req.Email,
@@ -46,7 +102,7 @@ func CreateAgent(c *gin.Context) {
 		return
 	}
 
-	log.Info().Uint("agent_id", agent.ID).Str("code", agent.Code).Msg("Agent created")
+	log.Info().Uint("agent_id", agent.ID).Str("code", agent.Code).Msg("Agent created with auth credentials")
 	c.JSON(http.StatusCreated, agent)
 }
 
