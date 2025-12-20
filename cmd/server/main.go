@@ -102,6 +102,10 @@ func main() {
 		v1.DELETE("/agents/:id", handlers.DeleteAgent)
 		v1.GET("/agents/:id/stats", handlers.GetAgentStats)
 
+		// Agent Category Commission routes
+		v1.GET("/agents/:id/category-commissions", handlers.GetAgentCategoryCommissions)
+		v1.PUT("/agents/:id/category-commissions", handlers.UpdateAgentCategoryCommissions)
+
 		// Commission routes
 		v1.POST("/commissions", handlers.CreateCommission)
 		v1.GET("/agents/:id/commissions", handlers.GetAgentCommissions)
