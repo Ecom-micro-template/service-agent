@@ -10,6 +10,7 @@ import (
 	"github.com/niaga-platform/service-agent/internal/config"
 	"github.com/niaga-platform/service-agent/internal/database"
 	"github.com/niaga-platform/service-agent/internal/handlers"
+	"github.com/niaga-platform/service-agent/internal/middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -121,8 +122,9 @@ func main() {
 		v1.GET("/payouts/:id", handlers.GetPayout)
 		v1.PUT("/payouts/:id/mark-paid", handlers.MarkPayoutPaid)
 
-		// Agent Portal routes (for frontend)
+		// Agent Portal routes (for frontend - require agent auth)
 		agent := v1.Group("/agent")
+		agent.Use(middleware.AgentAuthMiddleware())
 		{
 			agent.GET("/profile", handlers.GetAgentProfile)
 			agent.GET("/dashboard", handlers.GetAgentDashboard)
