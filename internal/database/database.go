@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/niaga-platform/service-agent/internal/config"
-	"github.com/niaga-platform/service-agent/internal/models"
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -54,27 +53,10 @@ func InitDatabase(cfg *config.Config) error {
 		Int("max_idle_conns", 10).
 		Msg("Connected to database with connection pooling")
 
-	// Disable FK constraints for migration (circular reference: Agent ↔ Team)
-	DB.Exec("SET session_replication_role = replica")
-
-	// Auto migrate models - migrate all at once since FK constraints are disabled
-	if err := DB.AutoMigrate(
-		&models.Agent{},
-		&models.Team{},
-		&models.Commission{},
-		&models.Payout{},
-		&models.Customer{},
-		&models.Order{},
-		&models.AgentCategoryCommission{},
-	); err != nil {
-		DB.Exec("SET session_replication_role = DEFAULT")
-		return fmt.Errorf("failed to auto migrate: %w", err)
-	}
-
-	// Re-enable FK constraints
-	DB.Exec("SET session_replication_role = DEFAULT")
-
-	log.Info().Msg("Database migrations completed")
+	// Note: Schema migrations are handled by database/migrations SQL files.
+	// AutoMigrate is disabled to prevent conflicts with existing schema.
+	// All table structures are managed by the centralized migration system.
+	log.Info().Msg("Database connected, using existing schema")
 
 	return nil
 }

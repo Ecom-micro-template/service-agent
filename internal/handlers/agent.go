@@ -195,7 +195,13 @@ func UpdateAgent(c *gin.Context) {
 	c.JSON(http.StatusOK, agent)
 }
 
-// DeleteAgent soft deletes an agent
+// AuthUpdateStatusRequest is the request to update user status in auth service
+type AuthUpdateStatusRequest struct {
+	Email  string `json:"email"`
+	Status string `json:"status"`
+}
+
+// DeleteAgent soft deletes an agent and deactivates their auth account
 func DeleteAgent(c *gin.Context) {
 	id := c.Param("id")
 
@@ -205,11 +211,41 @@ func DeleteAgent(c *gin.Context) {
 		return
 	}
 
+	// Update agent status to inactive
 	agent.Status = "inactive"
 	if err := database.GetDB().Save(&agent).Error; err != nil {
 		log.Error().Err(err).Msg("Failed to delete agent")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete agent"})
 		return
+	}
+
+	// Also deactivate the user in auth service so they can't login
+	authURL := os.Getenv("AUTH_SERVICE_URL")
+	if authURL == "" {
+		authURL = "http://kilang-auth:8001"
+	}
+
+	authReq := AuthUpdateStatusRequest{
+		Email:  agent.Email,
+		Status: "inactive",
+	}
+
+	authBody, _ := json.Marshal(authReq)
+	httpReq, _ := http.NewRequest("PUT", authURL+"/api/v1/admin/users/update-status-by-email", bytes.NewBuffer(authBody))
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	authResp, err := client.Do(httpReq)
+	if err != nil {
+		log.Warn().Err(err).Msg("Failed to deactivate agent in auth service")
+		// Don't fail the request, agent is already marked inactive
+	} else {
+		defer authResp.Body.Close()
+		if authResp.StatusCode != http.StatusOK {
+			log.Warn().Int("status", authResp.StatusCode).Msg("Auth service returned non-OK status for deactivation")
+		} else {
+			log.Info().Str("email", agent.Email).Msg("Agent deactivated in auth service")
+		}
 	}
 
 	log.Info().Uint("agent_id", agent.ID).Msg("Agent deleted")

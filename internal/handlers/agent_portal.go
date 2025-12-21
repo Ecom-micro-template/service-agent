@@ -336,7 +336,7 @@ func CreateAgentCustomer(c *gin.Context) {
 	}
 
 	customer := models.Customer{
-		AgentID:  agentID,
+		AgentID:  &agentID,
 		Name:     req.Name,
 		Email:    req.Email,
 		Phone:    req.Phone,

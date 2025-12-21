@@ -72,7 +72,7 @@ type CommissionBreakdown struct {
 // Customer represents an agent's customer
 type Customer struct {
 	ID          uint       `gorm:"primaryKey" json:"id"`
-	AgentID     uint       `gorm:"index;not null" json:"agent_id"`
+	AgentID     *uint      `gorm:"index" json:"agent_id,omitempty"`
 	Name        string     `gorm:"size:255;not null" json:"name"`
 	Email       string     `gorm:"uniqueIndex;size:255;not null" json:"email"`
 	Phone       string     `gorm:"size:50" json:"phone"`
