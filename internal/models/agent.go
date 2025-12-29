@@ -92,20 +92,24 @@ func (Customer) TableName() string {
 }
 
 // Order represents an agent's order (simplified view)
+// Uses UUID to match the actual orders table in service-order
 type Order struct {
-	ID             uint      `gorm:"primaryKey" json:"id"`
-	OrderNumber    string    `gorm:"uniqueIndex;size:50;not null" json:"order_number"`
-	AgentID        uint      `gorm:"index;not null" json:"agent_id"`
-	CustomerID     uint      `gorm:"index;not null" json:"customer_id"`
-	CustomerName   string    `gorm:"size:255" json:"customer_name"`
-	CustomerEmail  string    `gorm:"size:255" json:"customer_email"`
-	Total          float64   `gorm:"type:decimal(12,2);not null" json:"total"`
-	Status         string    `gorm:"size:20;default:'pending'" json:"status"`
-	PaymentStatus  string    `gorm:"size:20;default:'unpaid'" json:"payment_status"`
-	CommissionRate float64   `gorm:"type:decimal(5,2)" json:"commission_rate"`
-	Commission     float64   `gorm:"type:decimal(10,2)" json:"commission"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID              string    `gorm:"primaryKey;type:uuid" json:"id"`
+	OrderNumber     string    `gorm:"uniqueIndex;size:50;not null" json:"order_number"`
+	AgentID         string    `gorm:"type:uuid;index" json:"agent_id"`
+	CustomerID      string    `gorm:"type:uuid;index;not null" json:"customer_id"`
+	CustomerName    string    `gorm:"size:255" json:"customer_name"`
+	CustomerEmail   string    `gorm:"size:255" json:"customer_email"`
+	Subtotal        float64   `gorm:"type:decimal(12,2)" json:"subtotal"`
+	ShippingCost    float64   `gorm:"type:decimal(10,2)" json:"shipping_cost"`
+	Discount        float64   `gorm:"type:decimal(10,2)" json:"discount"`
+	Tax             float64   `gorm:"type:decimal(10,2)" json:"tax"`
+	Total           float64   `gorm:"column:total;type:decimal(12,2)" json:"total"`
+	Status          string    `gorm:"size:20;default:'pending'" json:"status"`
+	PaymentStatus   string    `gorm:"size:30;default:'unpaid'" json:"payment_status"`
+	AgentCommission float64   `gorm:"type:decimal(10,2)" json:"agent_commission"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 func (Order) TableName() string {

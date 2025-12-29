@@ -96,29 +96,40 @@ func GetAgentDashboard(c *gin.Context) {
 		return
 	}
 
+	// Get agent email from context to look up auth user ID for orders
+	agentEmail, _ := c.Get("agent_email")
+
 	db := database.GetDB()
 	dashboard := models.Dashboard{}
+
+	// Get auth user ID for order queries (orders use auth UUID, not agent uint)
+	var authUserID string
+	if agentEmail != nil {
+		db.Table("auth.users").Where("email = ?", agentEmail).Select("id").Scan(&authUserID)
+	}
 
 	// Get current month start
 	now := time.Now()
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 
-	// Total orders and sales
-	db.Model(&models.Order{}).Where("agent_id = ?", agentID).Count(&dashboard.TotalOrders)
-	db.Model(&models.Order{}).Where("agent_id = ?", agentID).Select("COALESCE(SUM(total), 0)").Scan(&dashboard.TotalSales)
+	// Total orders and sales (use auth user UUID)
+	if authUserID != "" {
+		db.Model(&models.Order{}).Where("agent_id = ?", authUserID).Count(&dashboard.TotalOrders)
+		db.Model(&models.Order{}).Where("agent_id = ?", authUserID).Select("COALESCE(SUM(total), 0)").Scan(&dashboard.TotalSales)
 
-	// Monthly stats
-	db.Model(&models.Order{}).
-		Where("agent_id = ? AND created_at >= ?", agentID, monthStart).
-		Count(&dashboard.MonthlyOrders)
-	db.Model(&models.Order{}).
-		Where("agent_id = ? AND created_at >= ?", agentID, monthStart).
-		Select("COALESCE(SUM(total), 0)").Scan(&dashboard.MonthlySales)
+		// Monthly stats
+		db.Model(&models.Order{}).
+			Where("agent_id = ? AND created_at >= ?", authUserID, monthStart).
+			Count(&dashboard.MonthlyOrders)
+		db.Model(&models.Order{}).
+			Where("agent_id = ? AND created_at >= ?", authUserID, monthStart).
+			Select("COALESCE(SUM(total), 0)").Scan(&dashboard.MonthlySales)
+	}
 
-	// Total customers
+	// Total customers (use agent uint ID)
 	db.Model(&models.Customer{}).Where("agent_id = ?", agentID).Count(&dashboard.TotalCustomers)
 
-	// Commission stats
+	// Commission stats (use agent uint ID)
 	db.Model(&models.Commission{}).
 		Where("agent_id = ?", agentID).
 		Select("COALESCE(SUM(commission_amount), 0)").
@@ -161,9 +172,28 @@ func GetAgentDashboard(c *gin.Context) {
 
 // GetAgentOrders retrieves all orders for the agent
 func GetAgentOrders(c *gin.Context) {
-	agentID, err := GetAgentFromContext(c)
-	if err != nil {
+	// Get agent email from context (set by auth middleware)
+	agentEmail, exists := c.Get("agent_email")
+	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Get auth user ID for this agent (orders use auth user UUID, not agent integer ID)
+	var authUserID string
+	if err := database.GetDB().Table("auth.users").
+		Where("email = ?", agentEmail).
+		Select("id").
+		Scan(&authUserID).Error; err != nil || authUserID == "" {
+		log.Error().Str("email", agentEmail.(string)).Msg("Auth user not found for agent")
+		// Return empty result instead of error (agent might not have any orders yet)
+		c.JSON(http.StatusOK, gin.H{
+			"data":        []models.Order{},
+			"total":       0,
+			"page":        1,
+			"limit":       20,
+			"total_pages": 0,
+		})
 		return
 	}
 
@@ -174,7 +204,7 @@ func GetAgentOrders(c *gin.Context) {
 	offset := (page - 1) * limit
 
 	var orders []models.Order
-	query := database.GetDB().Model(&models.Order{}).Where("agent_id = ?", agentID)
+	query := database.GetDB().Model(&models.Order{}).Where("agent_id = ?", authUserID)
 
 	if status != "" {
 		query = query.Where("status = ?", status)
@@ -199,82 +229,38 @@ func GetAgentOrders(c *gin.Context) {
 }
 
 // CreateAgentOrder creates a new order for the agent
+// NOTE: Orders should be created through the storefront (service-order) with agent referral code.
+// This endpoint is deprecated - agents cannot create orders directly.
 func CreateAgentOrder(c *gin.Context) {
-	agentID, err := GetAgentFromContext(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	var req models.CreateOrderRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	db := database.GetDB()
-
-	// Get customer details
-	var customer models.Customer
-	if err := db.First(&customer, req.CustomerID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
-		return
-	}
-
-	// Get agent for commission rate
-	var agent models.Agent
-	if err := db.First(&agent, agentID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
-		return
-	}
-
-	// Calculate total
-	var total float64
-	for _, item := range req.Items {
-		total += item.Price * float64(item.Quantity)
-	}
-
-	// Generate order number
-	var count int64
-	db.Model(&models.Order{}).Count(&count)
-	orderNumber := fmt.Sprintf("ORD-%s-%05d", time.Now().Format("20060102"), count+1)
-
-	// Create order
-	order := models.Order{
-		OrderNumber:    orderNumber,
-		AgentID:        agentID,
-		CustomerID:     req.CustomerID,
-		CustomerName:   customer.Name,
-		CustomerEmail:  customer.Email,
-		Total:          total,
-		Status:         "pending",
-		PaymentStatus:  "unpaid",
-		CommissionRate: agent.CommissionRate,
-		Commission:     total * agent.CommissionRate / 100,
-	}
-
-	if err := db.Create(&order).Error; err != nil {
-		log.Error().Err(err).Msg("Failed to create order")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create order"})
-		return
-	}
-
-	log.Info().Uint("agent_id", agentID).Uint("order_id", order.ID).Str("order_number", order.OrderNumber).Msg("Order created")
-	c.JSON(http.StatusCreated, order)
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error":   "Direct order creation is not supported",
+		"message": "Orders should be created through the storefront using your agent referral link",
+	})
 }
 
 // GetAgentOrder retrieves a single order
 func GetAgentOrder(c *gin.Context) {
-	agentID, err := GetAgentFromContext(c)
-	if err != nil {
+	// Get agent email from context (set by auth middleware)
+	agentEmail, exists := c.Get("agent_email")
+	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Get auth user ID for this agent (orders use auth user UUID)
+	var authUserID string
+	if err := database.GetDB().Table("auth.users").
+		Where("email = ?", agentEmail).
+		Select("id").
+		Scan(&authUserID).Error; err != nil || authUserID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Agent not found"})
 		return
 	}
 
 	orderID := c.Param("id")
 
 	var order models.Order
-	if err := database.GetDB().Where("agent_id = ?", agentID).First(&order, orderID).Error; err != nil {
+	if err := database.GetDB().Where("agent_id = ? AND id = ?", authUserID, orderID).First(&order).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
 		return
 	}
@@ -477,9 +463,19 @@ func GetAgentPerformance(c *gin.Context) {
 		return
 	}
 
+	// Get agent email from context to look up auth user ID for orders
+	agentEmail, _ := c.Get("agent_email")
+
+	db := database.GetDB()
+
+	// Get auth user ID for order queries (orders use auth UUID, not agent uint)
+	var authUserID string
+	if agentEmail != nil {
+		db.Table("auth.users").Where("email = ?", agentEmail).Select("id").Scan(&authUserID)
+	}
+
 	// Get last 12 months
 	var performances []models.Performance
-	db := database.GetDB()
 
 	for i := 11; i >= 0; i-- {
 		monthStart := time.Now().AddDate(0, -i, 0)
@@ -489,17 +485,19 @@ func GetAgentPerformance(c *gin.Context) {
 		var perf models.Performance
 		perf.Month = monthStart
 
-		// Total sales and orders for this month
-		db.Model(&models.Order{}).
-			Where("agent_id = ? AND created_at >= ? AND created_at < ?", agentID, monthStart, monthEnd).
-			Count(&perf.TotalOrders)
+		// Total sales and orders for this month (use auth user UUID)
+		if authUserID != "" {
+			db.Model(&models.Order{}).
+				Where("agent_id = ? AND created_at >= ? AND created_at < ?", authUserID, monthStart, monthEnd).
+				Count(&perf.TotalOrders)
 
-		db.Model(&models.Order{}).
-			Where("agent_id = ? AND created_at >= ? AND created_at < ?", agentID, monthStart, monthEnd).
-			Select("COALESCE(SUM(total), 0)").
-			Scan(&perf.TotalSales)
+			db.Model(&models.Order{}).
+				Where("agent_id = ? AND created_at >= ? AND created_at < ?", authUserID, monthStart, monthEnd).
+				Select("COALESCE(SUM(total), 0)").
+				Scan(&perf.TotalSales)
+		}
 
-		// Commission breakdown
+		// Commission breakdown (use agent uint ID)
 		db.Model(&models.Commission{}).
 			Where("agent_id = ? AND created_at >= ? AND created_at < ?", agentID, monthStart, monthEnd).
 			Select("COALESCE(SUM(commission_amount), 0)").
