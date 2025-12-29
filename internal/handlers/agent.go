@@ -107,10 +107,12 @@ func CreateAgent(c *gin.Context) {
 }
 
 // GetAgents lists all agents with pagination
+// By default, excludes inactive/deleted agents unless ?include_inactive=true
 func GetAgents(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	status := c.Query("status")
+	includeInactive := c.Query("include_inactive") == "true"
 
 	offset := (page - 1) * limit
 
@@ -118,13 +120,17 @@ func GetAgents(c *gin.Context) {
 	query := database.GetDB().Model(&models.Agent{})
 
 	if status != "" {
+		// If specific status is requested, use it
 		query = query.Where("status = ?", status)
+	} else if !includeInactive {
+		// By default, exclude inactive agents (deleted agents)
+		query = query.Where("status != ?", "inactive")
 	}
 
 	var total int64
 	query.Count(&total)
 
-	if err := query.Offset(offset).Limit(limit).Find(&agents).Error; err != nil {
+	if err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&agents).Error; err != nil {
 		log.Error().Err(err).Msg("Failed to fetch agents")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch agents"})
 		return

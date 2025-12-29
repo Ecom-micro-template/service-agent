@@ -95,7 +95,7 @@ func main() {
 	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
-		// Admin Agent routes (CRUD)
+		// Admin Agent routes (CRUD) - under /agents for backwards compatibility
 		v1.POST("/agents", handlers.CreateAgent)
 		v1.GET("/agents", handlers.GetAgents)
 		v1.GET("/agents/:id", handlers.GetAgent)
@@ -153,6 +153,9 @@ func main() {
 			admin.GET("/agents/:id/stats", handlers.GetAgentStats)
 			admin.GET("/agents/:id/commissions", handlers.GetAgentCommissions)
 			admin.GET("/agents/:id/payouts", handlers.GetAgentPayouts)
+			admin.GET("/agents/:id/category-commissions", handlers.GetAgentCategoryCommissions)
+			admin.PUT("/agents/:id/category-commissions", handlers.UpdateAgentCategoryCommissions)
+			admin.PUT("/agents/:id/reset-password", handlers.ResetAgentPassword)
 
 			// Commission management
 			admin.GET("/commissions", handlers.GetPendingCommissions)
