@@ -431,19 +431,19 @@ func (s *CommissionCalculatorService) GetCommissionStats(agentID uuid.UUID) (*Co
 
 	// Get total pending
 	s.db.Table("sales.agent_commissions").
-		Select("COALESCE(SUM(commission_amount), 0)").
+		Select("COALESCE(SUM(amount), 0)").
 		Where("agent_id = ? AND status = ?", agentID, CommissionStatusPending).
 		Scan(&stats.TotalPending)
 
 	// Get total approved
 	s.db.Table("sales.agent_commissions").
-		Select("COALESCE(SUM(commission_amount), 0)").
+		Select("COALESCE(SUM(amount), 0)").
 		Where("agent_id = ? AND status = ?", agentID, CommissionStatusApproved).
 		Scan(&stats.TotalApproved)
 
 	// Get total paid
 	s.db.Table("sales.agent_commissions").
-		Select("COALESCE(SUM(commission_amount), 0)").
+		Select("COALESCE(SUM(amount), 0)").
 		Where("agent_id = ? AND status = ?", agentID, CommissionStatusPaid).
 		Scan(&stats.TotalPaid)
 
@@ -497,7 +497,7 @@ func (s *CommissionCalculatorService) CalculateMonthlyPerformance(agentID uuid.U
 
 	s.db.Table("sales.agent_commissions").
 		Select(`
-			COALESCE(SUM(commission_amount), 0) as total_commission,
+			COALESCE(SUM(amount), 0) as total_commission,
 			COUNT(*) as total_orders,
 			COALESCE(SUM(order_total), 0) as total_sales
 		`).

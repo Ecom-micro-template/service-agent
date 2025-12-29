@@ -132,27 +132,27 @@ func GetAgentDashboard(c *gin.Context) {
 	// Commission stats (use agent uint ID)
 	db.Model(&models.Commission{}).
 		Where("agent_id = ?", agentID).
-		Select("COALESCE(SUM(commission_amount), 0)").
+		Select("COALESCE(SUM(amount), 0)").
 		Scan(&dashboard.TotalCommission)
 
 	db.Model(&models.Commission{}).
 		Where("agent_id = ? AND status = ?", agentID, "pending").
-		Select("COALESCE(SUM(commission_amount), 0)").
+		Select("COALESCE(SUM(amount), 0)").
 		Scan(&dashboard.PendingCommission)
 
 	db.Model(&models.Commission{}).
 		Where("agent_id = ? AND status = ?", agentID, "approved").
-		Select("COALESCE(SUM(commission_amount), 0)").
+		Select("COALESCE(SUM(amount), 0)").
 		Scan(&dashboard.ApprovedCommission)
 
 	db.Model(&models.Commission{}).
 		Where("agent_id = ? AND status = ?", agentID, "paid").
-		Select("COALESCE(SUM(commission_amount), 0)").
+		Select("COALESCE(SUM(amount), 0)").
 		Scan(&dashboard.PaidCommission)
 
 	db.Model(&models.Commission{}).
 		Where("agent_id = ? AND created_at >= ?", agentID, monthStart).
-		Select("COALESCE(SUM(commission_amount), 0)").
+		Select("COALESCE(SUM(amount), 0)").
 		Scan(&dashboard.MonthlyCommission)
 
 	// Average order value
@@ -500,22 +500,22 @@ func GetAgentPerformance(c *gin.Context) {
 		// Commission breakdown (use agent uint ID)
 		db.Model(&models.Commission{}).
 			Where("agent_id = ? AND created_at >= ? AND created_at < ?", agentID, monthStart, monthEnd).
-			Select("COALESCE(SUM(commission_amount), 0)").
+			Select("COALESCE(SUM(amount), 0)").
 			Scan(&perf.TotalCommission)
 
 		db.Model(&models.Commission{}).
 			Where("agent_id = ? AND status = ? AND created_at >= ? AND created_at < ?", agentID, "pending", monthStart, monthEnd).
-			Select("COALESCE(SUM(commission_amount), 0)").
+			Select("COALESCE(SUM(amount), 0)").
 			Scan(&perf.CommissionPending)
 
 		db.Model(&models.Commission{}).
 			Where("agent_id = ? AND status = ? AND created_at >= ? AND created_at < ?", agentID, "approved", monthStart, monthEnd).
-			Select("COALESCE(SUM(commission_amount), 0)").
+			Select("COALESCE(SUM(amount), 0)").
 			Scan(&perf.CommissionApproved)
 
 		db.Model(&models.Commission{}).
 			Where("agent_id = ? AND status = ? AND created_at >= ? AND created_at < ?", agentID, "paid", monthStart, monthEnd).
-			Select("COALESCE(SUM(commission_amount), 0)").
+			Select("COALESCE(SUM(amount), 0)").
 			Scan(&perf.CommissionPaid)
 
 		performances = append(performances, perf)
