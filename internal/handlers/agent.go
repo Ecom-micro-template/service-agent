@@ -88,6 +88,16 @@ func CreateAgent(c *gin.Context) {
 		return
 	}
 
+	// Update user role to "agent" in auth.users table
+	// This is needed because the public register endpoint sets role to "customer" for security
+	result := database.GetDB().Exec("UPDATE auth.users SET role = 'agent' WHERE email = ?", req.Email)
+	if result.Error != nil {
+		log.Error().Err(result.Error).Str("email", req.Email).Msg("Failed to update user role to agent")
+		// Don't fail - the user was created, we can manually fix the role
+	} else if result.RowsAffected > 0 {
+		log.Info().Str("email", req.Email).Msg("User role updated to agent")
+	}
+
 	// Now create the agent record
 	agent := models.Agent{
 		Name:           req.Name,
