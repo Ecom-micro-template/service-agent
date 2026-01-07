@@ -1,18 +1,11 @@
-// Package models contains GORM persistence models for the agent service.
-//
-// Deprecated: This package is being migrated to DDD architecture.
-// For new development, use:
-//   - Domain models: github.com/niaga-platform/service-agent/internal/domain/payout
-//   - Persistence: github.com/niaga-platform/service-agent/internal/infrastructure/persistence
-//
-// Existing code can continue using this package during the transition period.
-package models
+package persistence
 
 import (
 	"time"
 )
 
-type Payout struct {
+// PayoutModel is the GORM persistence model for Payout.
+type PayoutModel struct {
 	ID            uint       `gorm:"primaryKey" json:"id"`
 	AgentID       uint       `gorm:"not null;index" json:"agent_id"`
 	Amount        float64    `gorm:"type:decimal(10,2);not null" json:"amount"`
@@ -24,9 +17,10 @@ type Payout struct {
 	UpdatedAt     time.Time  `json:"updated_at"`
 
 	// Relations
-	Agent Agent `gorm:"foreignKey:AgentID" json:"agent,omitempty"`
+	Agent AgentModel `gorm:"foreignKey:AgentID" json:"agent,omitempty"`
 }
 
-func (Payout) TableName() string {
+// TableName specifies the table name.
+func (PayoutModel) TableName() string {
 	return "payouts"
 }
