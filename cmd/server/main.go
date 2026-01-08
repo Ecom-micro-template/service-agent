@@ -142,7 +142,8 @@ func main() {
 
 		// Admin routes (require admin middleware)
 		admin := v1.Group("/admin")
-		admin.Use(libmiddleware.RequireAdmin())
+		admin.Use(middleware.AdminAuthMiddleware()) // Parse JWT and set user_role
+		admin.Use(libmiddleware.RequireAdmin())     // Verify admin role
 		{
 			// Agent management
 			admin.GET("/agents", handlers.GetAgents)
