@@ -1,4 +1,4 @@
-module github.com/niaga-platform/service-agent
+module github.com/Ecom-micro-template/service-agent
 
 go 1.24.0
 
@@ -7,7 +7,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.4.0
 	github.com/joho/godotenv v1.5.1
-	github.com/niaga-platform/lib-common v0.0.0-00010101000000-000000000000
+	github.com/Ecom-micro-template/lib-common-go v0.0.0-00010101000000-000000000000
 	github.com/rs/zerolog v1.31.0
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/postgres v1.5.9
@@ -57,4 +57,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/niaga-platform/lib-common => ../lib-common
+replace github.com/Ecom-micro-template/lib-common-go => ../lib-common

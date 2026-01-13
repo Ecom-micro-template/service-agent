@@ -486,8 +486,8 @@ package main
 
 import (
     "github.com/gin-gonic/gin"
-    "github.com/niaga-platform/service-agent/internal/database"
-    "github.com/niaga-platform/service-agent/internal/routes"
+    "github.com/ecommerce-platform/service-agent/internal/database"
+    "github.com/ecommerce-platform/service-agent/internal/routes"
     // ... other imports
 )
 

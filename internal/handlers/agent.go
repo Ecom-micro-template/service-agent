@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/niaga-platform/service-agent/internal/database"
-	"github.com/niaga-platform/service-agent/internal/models"
+	"github.com/Ecom-micro-template/service-agent/internal/database"
+	"github.com/Ecom-micro-template/service-agent/internal/models"
 	"github.com/rs/zerolog/log"
 )
 
@@ -49,7 +49,7 @@ func CreateAgent(c *gin.Context) {
 	// First, register the agent as a user in auth service
 	authURL := os.Getenv("AUTH_SERVICE_URL")
 	if authURL == "" {
-		authURL = "http://kilang-auth:8001"
+		authURL = "http://ecommerce-auth:8001"
 	}
 
 	// Split name into first/last name
@@ -238,7 +238,7 @@ func DeleteAgent(c *gin.Context) {
 	// Also deactivate the user in auth service so they can't login
 	authURL := os.Getenv("AUTH_SERVICE_URL")
 	if authURL == "" {
-		authURL = "http://kilang-auth:8001"
+		authURL = "http://ecommerce-auth:8001"
 	}
 
 	authReq := AuthUpdateStatusRequest{
@@ -299,7 +299,7 @@ func ResetAgentPassword(c *gin.Context) {
 	// Call auth service to reset password
 	authURL := os.Getenv("AUTH_SERVICE_URL")
 	if authURL == "" {
-		authURL = "http://kilang-auth:8001"
+		authURL = "http://ecommerce-auth:8001"
 	}
 
 	// Use admin password reset endpoint

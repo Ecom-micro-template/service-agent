@@ -2,8 +2,8 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/niaga-platform/service-agent/internal/handlers"
-	"github.com/niaga-platform/service-agent/internal/middleware"
+	"github.com/Ecom-micro-template/service-agent/internal/handlers"
+	"github.com/Ecom-micro-template/service-agent/internal/middleware"
 )
 
 // RegisterAgentRoutes registers all agent portal routes

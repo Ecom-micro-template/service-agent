@@ -40,4 +40,4 @@ Server: http://localhost:8080
 
 ---
 
-**© 2024 Desa Murni Batik** | [KilangDesaMurniBatik](https://github.com/KilangDesaMurniBatik)
+**© 2024 Desa Murni Batik** | [ecommerceDesaMurniBatik](https://github.com/ecommerceDesaMurniBatik)

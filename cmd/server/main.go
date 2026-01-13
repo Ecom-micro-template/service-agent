@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	libmiddleware "github.com/niaga-platform/lib-common/middleware"
-	"github.com/niaga-platform/service-agent/internal/config"
-	"github.com/niaga-platform/service-agent/internal/database"
-	"github.com/niaga-platform/service-agent/internal/handlers"
-	"github.com/niaga-platform/service-agent/internal/middleware"
+	libmiddleware "github.com/Ecom-micro-template/lib-common-go/middleware"
+	"github.com/Ecom-micro-template/service-agent/internal/config"
+	"github.com/Ecom-micro-template/service-agent/internal/database"
+	"github.com/Ecom-micro-template/service-agent/internal/handlers"
+	"github.com/Ecom-micro-template/service-agent/internal/middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

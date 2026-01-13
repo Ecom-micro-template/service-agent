@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/niaga-platform/service-agent/internal/domain/shared"
+	"github.com/Ecom-micro-template/service-agent/internal/domain/shared"
 )
 
 // Domain errors for Payout aggregate

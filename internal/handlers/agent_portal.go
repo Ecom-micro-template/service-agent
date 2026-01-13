@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/niaga-platform/service-agent/internal/database"
-	"github.com/niaga-platform/service-agent/internal/models"
+	"github.com/Ecom-micro-template/service-agent/internal/database"
+	"github.com/Ecom-micro-template/service-agent/internal/models"
 	"github.com/rs/zerolog/log"
 )
 

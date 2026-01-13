@@ -1,7 +1,7 @@
 package commission
 
 import (
-	"github.com/niaga-platform/service-agent/internal/domain/shared"
+	"github.com/Ecom-micro-template/service-agent/internal/domain/shared"
 )
 
 // Calculator is a domain service for calculating commissions.

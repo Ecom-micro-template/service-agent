@@ -2,8 +2,8 @@
 //
 // Deprecated: This package is being migrated to DDD architecture.
 // For new development, use:
-//   - Domain models: github.com/niaga-platform/service-agent/internal/domain/payout
-//   - Persistence: github.com/niaga-platform/service-agent/internal/infrastructure/persistence
+//   - Domain models: github.com/Ecom-micro-template/service-agent/internal/domain/payout
+//   - Persistence: github.com/Ecom-micro-template/service-agent/internal/infrastructure/persistence
 //
 // Existing code can continue using this package during the transition period.
 package models

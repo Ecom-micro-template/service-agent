@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/niaga-platform/service-agent/internal/config"
+	"github.com/Ecom-micro-template/service-agent/internal/config"
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
