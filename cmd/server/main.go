@@ -53,7 +53,7 @@ func main() {
 	}
 
 	// Get database instance for handlers
-	_ = database.GetDB() // db not used after removing admin handlers
+	db := database.GetDB()
 
 	// Initialize admin handler - removed duplicate
 	// adminAgentHandler := handlers.NewAdminAgentHandler(db)
@@ -104,8 +104,8 @@ func main() {
 		v1.GET("/agents/:id/stats", handlers.GetAgentStats)
 
 		// Agent Category Commission routes
-		v1.GET("/agents/:id/category-commissions", handlers.GetAgentCategoryCommissions)
-		v1.PUT("/agents/:id/category-commissions", handlers.UpdateAgentCategoryCommissions)
+		v1.GET("/agents/:id/category-commissions", handlers.GetAgentCategoryCommissionsLegacy(db))
+		v1.PUT("/agents/:id/category-commissions", handlers.UpdateAgentCategoryCommissionsLegacy(db))
 
 		// Password reset route
 		v1.PUT("/agents/:id/reset-password", handlers.ResetAgentPassword)
@@ -154,8 +154,8 @@ func main() {
 			admin.GET("/agents/:id/stats", handlers.GetAgentStats)
 			admin.GET("/agents/:id/commissions", handlers.GetAgentCommissions)
 			admin.GET("/agents/:id/payouts", handlers.GetAgentPayouts)
-			admin.GET("/agents/:id/category-commissions", handlers.GetAgentCategoryCommissions)
-			admin.PUT("/agents/:id/category-commissions", handlers.UpdateAgentCategoryCommissions)
+			admin.GET("/agents/:id/category-commissions", handlers.GetAgentCategoryCommissionsLegacy(db))
+			admin.PUT("/agents/:id/category-commissions", handlers.UpdateAgentCategoryCommissionsLegacy(db))
 			admin.PUT("/agents/:id/reset-password", handlers.ResetAgentPassword)
 
 			// Commission management
