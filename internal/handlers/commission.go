@@ -26,7 +26,7 @@ func CreateCommission(c *gin.Context) {
 	}
 
 	// Get agent to use their commission rate if not specified
-	var agent models.Agent
+	var agent domain.Agent
 	if err := database.GetDB().First(&agent, req.AgentID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -39,9 +39,9 @@ func CreateCommission(c *gin.Context) {
 	}
 
 	// Calculate commission amount
-	amount := models.CalculateCommission(req.OrderTotal, rate)
+	amount := domain.CalculateCommission(req.OrderTotal, rate)
 
-	commission := models.Commission{
+	commission := domain.Commission{
 		AgentID:    req.AgentID,
 		OrderID:    req.OrderID,
 		OrderTotal: req.OrderTotal,
@@ -69,7 +69,7 @@ func GetAgentCommissionsByID(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
-	var commissions []models.Commission
+	var commissions []domain.Commission
 	query := database.GetDB().Where("agent_id = ?", agentID)
 
 	if status != "" {
@@ -77,7 +77,7 @@ func GetAgentCommissionsByID(c *gin.Context) {
 	}
 
 	var total int64
-	query.Model(&models.Commission{}).Count(&total)
+	query.Model(&domain.Commission{}).Count(&total)
 
 	if err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&commissions).Error; err != nil {
 		log.Error().Err(err).Msg("Failed to fetch commissions")
@@ -87,14 +87,14 @@ func GetAgentCommissionsByID(c *gin.Context) {
 
 	// Calculate totals
 	var totalAmount float64
-	database.GetDB().Model(&models.Commission{}).
+	database.GetDB().Model(&domain.Commission{}).
 		Where("agent_id = ?", agentID).
 		Select("COALESCE(SUM(amount), 0)").
 		Row().
 		Scan(&totalAmount)
 
 	var pendingAmount float64
-	database.GetDB().Model(&models.Commission{}).
+	database.GetDB().Model(&domain.Commission{}).
 		Where("agent_id = ? AND status = ?", agentID, "pending").
 		Select("COALESCE(SUM(amount), 0)").
 		Row().
@@ -115,7 +115,7 @@ func GetAgentCommissionsByID(c *gin.Context) {
 func ApproveCommission(c *gin.Context) {
 	id := c.Param("id")
 
-	var commission models.Commission
+	var commission domain.Commission
 	if err := database.GetDB().First(&commission, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Commission not found"})
 		return
@@ -129,7 +129,7 @@ func ApproveCommission(c *gin.Context) {
 	}
 
 	// Update agent's total earned
-	var agent models.Agent
+	var agent domain.Agent
 	if err := database.GetDB().First(&agent, commission.AgentID).Error; err == nil {
 		agent.TotalEarned += commission.Amount
 		database.GetDB().Save(&agent)
@@ -146,10 +146,10 @@ func GetPendingCommissions(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
-	var commissions []models.Commission
+	var commissions []domain.Commission
 	var total int64
 
-	database.GetDB().Model(&models.Commission{}).Where("status = ?", "pending").Count(&total)
+	database.GetDB().Model(&domain.Commission{}).Where("status = ?", "pending").Count(&total)
 
 	if err := database.GetDB().
 		Where("status = ?", "pending").

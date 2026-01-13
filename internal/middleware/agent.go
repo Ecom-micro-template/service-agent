@@ -29,7 +29,7 @@ func RequireAgent() gin.HandlerFunc {
 		}
 
 		// Get agent record using user_id
-		var agent models.Agent
+		var agent domain.Agent
 		// Assuming there's a user_id field in agents table or email matching
 		// For now, we'll use the ID directly since the existing model uses auto-increment ID
 		agentID := userID.(uint)
@@ -71,7 +71,7 @@ func OptionalAgent() gin.HandlerFunc {
 			return
 		}
 
-		var agent models.Agent
+		var agent domain.Agent
 		agentID := userID.(uint)
 
 		if err := database.GetDB().First(&agent, agentID).Error; err == nil {

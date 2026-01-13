@@ -85,7 +85,7 @@ func AgentAuthMiddleware() gin.HandlerFunc {
 		}
 
 		// Find agent by email
-		var agent models.Agent
+		var agent domain.Agent
 		if err := database.GetDB().Where("email = ?", email).First(&agent).Error; err != nil {
 			log.Error().Str("email", email).Msg("Agent not found for email")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Agent not found"})

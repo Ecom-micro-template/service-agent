@@ -99,7 +99,7 @@ func CreateAgent(c *gin.Context) {
 	}
 
 	// Now create the agent record
-	agent := models.Agent{
+	agent := domain.Agent{
 		Name:           req.Name,
 		Email:          req.Email,
 		Phone:          req.Phone,
@@ -126,8 +126,8 @@ func GetAgents(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
-	var agents []models.Agent
-	query := database.GetDB().Model(&models.Agent{})
+	var agents []domain.Agent
+	query := database.GetDB().Model(&domain.Agent{})
 
 	if status != "" {
 		// If specific status is requested, use it
@@ -159,7 +159,7 @@ func GetAgents(c *gin.Context) {
 func GetAgent(c *gin.Context) {
 	id := c.Param("id")
 
-	var agent models.Agent
+	var agent domain.Agent
 	if err := database.GetDB().Preload("Commissions").Preload("Payouts").First(&agent, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -172,7 +172,7 @@ func GetAgent(c *gin.Context) {
 func UpdateAgent(c *gin.Context) {
 	id := c.Param("id")
 
-	var agent models.Agent
+	var agent domain.Agent
 	if err := database.GetDB().First(&agent, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -221,7 +221,7 @@ type AuthUpdateStatusRequest struct {
 func DeleteAgent(c *gin.Context) {
 	id := c.Param("id")
 
-	var agent models.Agent
+	var agent domain.Agent
 	if err := database.GetDB().First(&agent, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -284,7 +284,7 @@ func ResetAgentPassword(c *gin.Context) {
 	id := c.Param("id")
 
 	// First get the agent to find their email
-	var agent models.Agent
+	var agent domain.Agent
 	if err := database.GetDB().First(&agent, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return

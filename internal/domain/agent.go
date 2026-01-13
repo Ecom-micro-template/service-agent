@@ -1,4 +1,4 @@
-// Package models contains GORM persistence models for the agent service.
+// Package domain contains GORM persistence models for the agent service.
 //
 // Deprecated: This package is being migrated to DDD architecture.
 // For new development, use:
@@ -6,7 +6,7 @@
 //   - Persistence: github.com/Ecom-micro-template/service-agent/internal/infrastructure/persistence
 //
 // Existing code can continue using this package during the transition period.
-package models
+package domain
 
 import (
 	"fmt"

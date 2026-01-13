@@ -25,7 +25,7 @@ func CreatePayout(c *gin.Context) {
 	}
 
 	// Get all approved commissions for the agent that haven't been paid
-	var commissions []models.Commission
+	var commissions []domain.Commission
 	if err := database.GetDB().
 		Where("agent_id = ? AND status = ?", req.AgentID, "approved").
 		Find(&commissions).Error; err != nil {
@@ -50,7 +50,7 @@ func CreatePayout(c *gin.Context) {
 	// Convert commission IDs to JSON
 	commissionIDsJSON, _ := json.Marshal(commissionIDs)
 
-	payout := models.Payout{
+	payout := domain.Payout{
 		AgentID:       req.AgentID,
 		Amount:        totalAmount,
 		Period:        req.Period,
@@ -65,7 +65,7 @@ func CreatePayout(c *gin.Context) {
 	}
 
 	// Update commissions status to 'paid'
-	database.GetDB().Model(&models.Commission{}).
+	database.GetDB().Model(&domain.Commission{}).
 		Where("id IN ?", commissionIDs).
 		Update("status", "paid")
 
@@ -77,7 +77,7 @@ func CreatePayout(c *gin.Context) {
 func GetAgentPayouts(c *gin.Context) {
 	agentID := c.Param("id")
 
-	var payouts []models.Payout
+	var payouts []domain.Payout
 	if err := database.GetDB().
 		Where("agent_id = ?", agentID).
 		Order("created_at DESC").
@@ -96,7 +96,7 @@ func GetAgentPayouts(c *gin.Context) {
 func GetPayout(c *gin.Context) {
 	id := c.Param("id")
 
-	var payout models.Payout
+	var payout domain.Payout
 	if err := database.GetDB().Preload("Agent").First(&payout, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Payout not found"})
 		return
@@ -109,7 +109,7 @@ func GetPayout(c *gin.Context) {
 func MarkPayoutPaid(c *gin.Context) {
 	id := c.Param("id")
 
-	var payout models.Payout
+	var payout domain.Payout
 	if err := database.GetDB().First(&payout, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Payout not found"})
 		return
@@ -133,7 +133,7 @@ func MarkPayoutPaid(c *gin.Context) {
 func GetAgentStats(c *gin.Context) {
 	agentID := c.Param("id")
 
-	var agent models.Agent
+	var agent domain.Agent
 	if err := database.GetDB().First(&agent, agentID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -142,10 +142,10 @@ func GetAgentStats(c *gin.Context) {
 	// Get total commissions
 	var totalCommissions int64
 	var totalCommissionAmount float64
-	database.GetDB().Model(&models.Commission{}).
+	database.GetDB().Model(&domain.Commission{}).
 		Where("agent_id = ?", agentID).
 		Count(&totalCommissions)
-	database.GetDB().Model(&models.Commission{}).
+	database.GetDB().Model(&domain.Commission{}).
 		Where("agent_id = ?", agentID).
 		Select("COALESCE(SUM(amount), 0)").
 		Row().
@@ -154,10 +154,10 @@ func GetAgentStats(c *gin.Context) {
 	// Get pending commissions
 	var pendingCommissions int64
 	var pendingAmount float64
-	database.GetDB().Model(&models.Commission{}).
+	database.GetDB().Model(&domain.Commission{}).
 		Where("agent_id = ? AND status = ?", agentID, "pending").
 		Count(&pendingCommissions)
-	database.GetDB().Model(&models.Commission{}).
+	database.GetDB().Model(&domain.Commission{}).
 		Where("agent_id = ? AND status = ?", agentID, "pending").
 		Select("COALESCE(SUM(amount), 0)").
 		Row().
@@ -166,7 +166,7 @@ func GetAgentStats(c *gin.Context) {
 	// Get this month's commissions
 	currentMonth := time.Now().Format("2006-01")
 	var thisMonthAmount float64
-	database.GetDB().Model(&models.Commission{}).
+	database.GetDB().Model(&domain.Commission{}).
 		Where("agent_id = ? AND TO_CHAR(created_at, 'YYYY-MM') = ?", agentID, currentMonth).
 		Select("COALESCE(SUM(amount), 0)").
 		Row().
@@ -174,7 +174,7 @@ func GetAgentStats(c *gin.Context) {
 
 	// Get total payouts
 	var totalPayouts int64
-	database.GetDB().Model(&models.Payout{}).
+	database.GetDB().Model(&domain.Payout{}).
 		Where("agent_id = ?", agentID).
 		Count(&totalPayouts)
 

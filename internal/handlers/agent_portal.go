@@ -35,7 +35,7 @@ func GetAgentProfile(c *gin.Context) {
 		return
 	}
 
-	var agent models.Agent
+	var agent domain.Agent
 	if err := database.GetDB().Preload("Team").Preload("Team.Leader").First(&agent, agentID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -64,7 +64,7 @@ func UpdateAgentProfile(c *gin.Context) {
 		return
 	}
 
-	var agent models.Agent
+	var agent domain.Agent
 	if err := database.GetDB().First(&agent, agentID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -100,7 +100,7 @@ func GetAgentDashboard(c *gin.Context) {
 	agentEmail, _ := c.Get("agent_email")
 
 	db := database.GetDB()
-	dashboard := models.Dashboard{}
+	dashboard := domain.Dashboard{}
 
 	// Get auth user ID for order queries (orders use auth UUID, not agent uint)
 	var authUserID string
@@ -114,43 +114,43 @@ func GetAgentDashboard(c *gin.Context) {
 
 	// Total orders and sales (use auth user UUID)
 	if authUserID != "" {
-		db.Model(&models.Order{}).Where("agent_id = ?", authUserID).Count(&dashboard.TotalOrders)
-		db.Model(&models.Order{}).Where("agent_id = ?", authUserID).Select("COALESCE(SUM(total), 0)").Scan(&dashboard.TotalSales)
+		db.Model(&domain.Order{}).Where("agent_id = ?", authUserID).Count(&dashboard.TotalOrders)
+		db.Model(&domain.Order{}).Where("agent_id = ?", authUserID).Select("COALESCE(SUM(total), 0)").Scan(&dashboard.TotalSales)
 
 		// Monthly stats
-		db.Model(&models.Order{}).
+		db.Model(&domain.Order{}).
 			Where("agent_id = ? AND created_at >= ?", authUserID, monthStart).
 			Count(&dashboard.MonthlyOrders)
-		db.Model(&models.Order{}).
+		db.Model(&domain.Order{}).
 			Where("agent_id = ? AND created_at >= ?", authUserID, monthStart).
 			Select("COALESCE(SUM(total), 0)").Scan(&dashboard.MonthlySales)
 	}
 
 	// Total customers (use agent uint ID)
-	db.Model(&models.Customer{}).Where("agent_id = ?", agentID).Count(&dashboard.TotalCustomers)
+	db.Model(&domain.Customer{}).Where("agent_id = ?", agentID).Count(&dashboard.TotalCustomers)
 
 	// Commission stats (use agent uint ID)
-	db.Model(&models.Commission{}).
+	db.Model(&domain.Commission{}).
 		Where("agent_id = ?", agentID).
 		Select("COALESCE(SUM(amount), 0)").
 		Scan(&dashboard.TotalCommission)
 
-	db.Model(&models.Commission{}).
+	db.Model(&domain.Commission{}).
 		Where("agent_id = ? AND status = ?", agentID, "pending").
 		Select("COALESCE(SUM(amount), 0)").
 		Scan(&dashboard.PendingCommission)
 
-	db.Model(&models.Commission{}).
+	db.Model(&domain.Commission{}).
 		Where("agent_id = ? AND status = ?", agentID, "approved").
 		Select("COALESCE(SUM(amount), 0)").
 		Scan(&dashboard.ApprovedCommission)
 
-	db.Model(&models.Commission{}).
+	db.Model(&domain.Commission{}).
 		Where("agent_id = ? AND status = ?", agentID, "paid").
 		Select("COALESCE(SUM(amount), 0)").
 		Scan(&dashboard.PaidCommission)
 
-	db.Model(&models.Commission{}).
+	db.Model(&domain.Commission{}).
 		Where("agent_id = ? AND created_at >= ?", agentID, monthStart).
 		Select("COALESCE(SUM(amount), 0)").
 		Scan(&dashboard.MonthlyCommission)
@@ -161,7 +161,7 @@ func GetAgentDashboard(c *gin.Context) {
 	}
 
 	// Commission breakdown
-	dashboard.CommissionBreakdown = models.CommissionBreakdown{
+	dashboard.CommissionBreakdown = domain.CommissionBreakdown{
 		Pending:  dashboard.PendingCommission,
 		Approved: dashboard.ApprovedCommission,
 		Paid:     dashboard.PaidCommission,
@@ -188,7 +188,7 @@ func GetAgentOrders(c *gin.Context) {
 		log.Error().Str("email", agentEmail.(string)).Msg("Auth user not found for agent")
 		// Return empty result instead of error (agent might not have any orders yet)
 		c.JSON(http.StatusOK, gin.H{
-			"data":        []models.Order{},
+			"data":        []domain.Order{},
 			"total":       0,
 			"page":        1,
 			"limit":       20,
@@ -203,8 +203,8 @@ func GetAgentOrders(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
-	var orders []models.Order
-	query := database.GetDB().Model(&models.Order{}).Where("agent_id = ?", authUserID)
+	var orders []domain.Order
+	query := database.GetDB().Model(&domain.Order{}).Where("agent_id = ?", authUserID)
 
 	if status != "" {
 		query = query.Where("status = ?", status)
@@ -259,7 +259,7 @@ func GetAgentOrder(c *gin.Context) {
 
 	orderID := c.Param("id")
 
-	var order models.Order
+	var order domain.Order
 	if err := database.GetDB().Where("agent_id = ? AND id = ?", authUserID, orderID).First(&order).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
 		return
@@ -282,8 +282,8 @@ func GetAgentCustomers(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
-	var customers []models.Customer
-	query := database.GetDB().Model(&models.Customer{}).Where("agent_id = ?", agentID)
+	var customers []domain.Customer
+	query := database.GetDB().Model(&domain.Customer{}).Where("agent_id = ?", agentID)
 
 	if search != "" {
 		query = query.Where("name ILIKE ? OR email ILIKE ?", "%"+search+"%", "%"+search+"%")
@@ -315,13 +315,13 @@ func CreateAgentCustomer(c *gin.Context) {
 		return
 	}
 
-	var req models.CreateCustomerRequest
+	var req domain.CreateCustomerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	customer := models.Customer{
+	customer := domain.Customer{
 		AgentID:  &agentID,
 		Name:     req.Name,
 		Email:    req.Email,
@@ -352,7 +352,7 @@ func GetAgentCustomer(c *gin.Context) {
 
 	customerID := c.Param("id")
 
-	var customer models.Customer
+	var customer domain.Customer
 	if err := database.GetDB().Where("agent_id = ?", agentID).First(&customer, customerID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
@@ -371,13 +371,13 @@ func UpdateAgentCustomer(c *gin.Context) {
 
 	customerID := c.Param("id")
 
-	var customer models.Customer
+	var customer domain.Customer
 	if err := database.GetDB().Where("agent_id = ?", agentID).First(&customer, customerID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
 	}
 
-	var req models.UpdateCustomerRequest
+	var req domain.UpdateCustomerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -430,8 +430,8 @@ func GetAgentCommissions(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
-	var commissions []models.Commission
-	query := database.GetDB().Model(&models.Commission{}).Where("agent_id = ?", agentID)
+	var commissions []domain.Commission
+	query := database.GetDB().Model(&domain.Commission{}).Where("agent_id = ?", agentID)
 
 	if status != "" {
 		query = query.Where("status = ?", status)
@@ -475,45 +475,45 @@ func GetAgentPerformance(c *gin.Context) {
 	}
 
 	// Get last 12 months
-	var performances []models.Performance
+	var performances []domain.Performance
 
 	for i := 11; i >= 0; i-- {
 		monthStart := time.Now().AddDate(0, -i, 0)
 		monthStart = time.Date(monthStart.Year(), monthStart.Month(), 1, 0, 0, 0, 0, monthStart.Location())
 		monthEnd := monthStart.AddDate(0, 1, 0)
 
-		var perf models.Performance
+		var perf domain.Performance
 		perf.Month = monthStart
 
 		// Total sales and orders for this month (use auth user UUID)
 		if authUserID != "" {
-			db.Model(&models.Order{}).
+			db.Model(&domain.Order{}).
 				Where("agent_id = ? AND created_at >= ? AND created_at < ?", authUserID, monthStart, monthEnd).
 				Count(&perf.TotalOrders)
 
-			db.Model(&models.Order{}).
+			db.Model(&domain.Order{}).
 				Where("agent_id = ? AND created_at >= ? AND created_at < ?", authUserID, monthStart, monthEnd).
 				Select("COALESCE(SUM(total), 0)").
 				Scan(&perf.TotalSales)
 		}
 
 		// Commission breakdown (use agent uint ID)
-		db.Model(&models.Commission{}).
+		db.Model(&domain.Commission{}).
 			Where("agent_id = ? AND created_at >= ? AND created_at < ?", agentID, monthStart, monthEnd).
 			Select("COALESCE(SUM(amount), 0)").
 			Scan(&perf.TotalCommission)
 
-		db.Model(&models.Commission{}).
+		db.Model(&domain.Commission{}).
 			Where("agent_id = ? AND status = ? AND created_at >= ? AND created_at < ?", agentID, "pending", monthStart, monthEnd).
 			Select("COALESCE(SUM(amount), 0)").
 			Scan(&perf.CommissionPending)
 
-		db.Model(&models.Commission{}).
+		db.Model(&domain.Commission{}).
 			Where("agent_id = ? AND status = ? AND created_at >= ? AND created_at < ?", agentID, "approved", monthStart, monthEnd).
 			Select("COALESCE(SUM(amount), 0)").
 			Scan(&perf.CommissionApproved)
 
-		db.Model(&models.Commission{}).
+		db.Model(&domain.Commission{}).
 			Where("agent_id = ? AND status = ? AND created_at >= ? AND created_at < ?", agentID, "paid", monthStart, monthEnd).
 			Select("COALESCE(SUM(amount), 0)").
 			Scan(&perf.CommissionPaid)
@@ -533,7 +533,7 @@ func GetAgentTeam(c *gin.Context) {
 	}
 
 	// Get agent with team
-	var agent models.Agent
+	var agent domain.Agent
 	if err := database.GetDB().Preload("Team").First(&agent, agentID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found"})
 		return
@@ -545,7 +545,7 @@ func GetAgentTeam(c *gin.Context) {
 	}
 
 	// Get full team details with members
-	var team models.Team
+	var team domain.Team
 	if err := database.GetDB().Preload("Leader").Preload("Members").First(&team, agent.TeamID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
 		return

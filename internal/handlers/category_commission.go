@@ -14,7 +14,7 @@ import (
 func GetAgentCategoryCommissions(c *gin.Context) {
 	agentID := c.Param("id")
 
-	var commissions []models.AgentCategoryCommission
+	var commissions []domain.AgentCategoryCommission
 	if err := database.GetDB().Where("agent_id = ?", agentID).Find(&commissions).Error; err != nil {
 		log.Error().Err(err).Msg("Failed to fetch category commissions")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch category commissions"})
@@ -52,7 +52,7 @@ func UpdateAgentCategoryCommissions(c *gin.Context) {
 	db := database.GetDB()
 
 	// Delete existing category commissions for this agent
-	if err := db.Where("agent_id = ?", agentID).Delete(&models.AgentCategoryCommission{}).Error; err != nil {
+	if err := db.Where("agent_id = ?", agentID).Delete(&domain.AgentCategoryCommission{}).Error; err != nil {
 		log.Error().Err(err).Msg("Failed to delete existing category commissions")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update category commissions"})
 		return
@@ -61,7 +61,7 @@ func UpdateAgentCategoryCommissions(c *gin.Context) {
 	// Create new category commissions
 	for _, comm := range req.Commissions {
 		if comm.CommissionRate > 0 {
-			newComm := models.AgentCategoryCommission{
+			newComm := domain.AgentCategoryCommission{
 				AgentID:        uint(agentID),
 				CategoryID:     comm.CategoryID,
 				CategoryName:   comm.CategoryName,
